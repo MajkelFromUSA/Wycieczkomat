@@ -27,5 +27,18 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
   <script src="firebase-config.js"></script>
   <script src="script.js"></script>
+
+  <!-- Custom modal usuwania -->
+<div id="custom-modal" style="display:none;" class="modal-overlay">
+  <div class="modal" style="max-width: 400px; text-align: center;">
+    <h3 id="custom-modal-title">⚠️ Na pewno usunąć?</h3>
+    <p id="custom-modal-text"></p>
+    <div style="margin-top: 15px;">
+      <button id="custom-modal-ok">✅ Tak, usuń</button>
+      <button onclick="zamknijCustomModal()">❌ Anuluj</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

@@ -425,15 +425,16 @@ function zapiszDoOdbytych(klucz, nazwa, kategoria) {
         const div = document.createElement("div");
         div.className = "odbyta-wycieczka";
         div.innerHTML = `
-          <b>${obiekt.nazwa}</b><br/>
-          <i>${obiekt.data}</i><br/>
-          <button onclick="usunOdbyta('${klucz}', '${kategoria}')" 
-  style="padding:6px 10px; font-size:0.9em; margin-top:8px; border-radius:8px;">
-  🗑️
-</button>
+  <b style="cursor:pointer;" onclick="edytujOpis('${klucz}', '${kategoria}', '${obiekt.nazwa.replace(/'/g, "\\'")}')">${obiekt.nazwa}</b><br/>
+  <i>${obiekt.data}</i><br/>
+  <div id="opis-${klucz}">${obiekt.opis ? `<p><b>Opis:</b> ${obiekt.opis}</p>` : ""}</div>
+  <button onclick="usunOdbyta('${klucz}', '${kategoria}')" 
+    style="padding:6px 10px; font-size:0.9em; margin-top:8px; border-radius:8px;">
+    🗑️
+  </button>
+  <hr/>
+`;
 
-          <hr/>
-        `;
         lista.appendChild(div);
       });
     });
@@ -684,4 +685,140 @@ function zapiszDoOdbytych(klucz, nazwa, kategoria) {
     localStorage.setItem("tryb", tryb);
     zastosujMotywZPamieci();
   }
+  function zaladujPanelRoboczy() {
+    const app = document.getElementById("app");
+  
+    app.innerHTML = `
+      <div style="text-align: left; padding: 10px;">
+        <button onclick="wrocDoGlownej()">⬅️ Wróć</button>
+      </div>
+      <div class="title-bar">PANEL ROBOCZY (${lokalizacjaID})</div>
+  
+      <div style="display:flex; justify-content:center; margin-top:20px; flex-wrap:wrap; gap:30px;">
+        <div class="dodaj-box">
+          <h3>🗺️ Dodaj nową wycieczkę</h3>
+  
+          <div class="kategorie-przyciski">
+            <button onclick="ustawKategorie('jednodniowe')" id="kat-jednodniowe">Jednodniowa</button>
+            <button onclick="ustawKategorie('weekendowe')" id="kat-weekendowe">Weekendowa</button>
+            <button onclick="ustawKategorie('kilkudniowe')" id="kat-kilkudniowe">Kilkudniowa</button>
+            <button onclick="ustawKategorie('wakacyjne')" id="kat-wakacyjne">Wakacyjna</button>
+          </div>
+  
+          <input type="hidden" id="kategoria-wycieczki" value="jednodniowe" />
+  
+          <input type="text" id="nazwa-wycieczki" placeholder="Np. Tychy, Wrocław..." class="input-wycieczka" />
+  
+          <button onclick="dodajWycieczke()" class="przycisk-dodaj">➕ Dodaj wycieczkę</button>
+  
+          <p id="info-dodaj" style="color: green; font-weight: bold; display: none; margin-top: 15px;"></p>
+        </div>
+  
+        <div class="dodaj-box">
+          <h3>📚 Baza wycieczek</h3>
+          <button onclick="pokazBazeWycieczek()">🔍 Zobacz wszystkie</button>
+          <div id="baza-wycieczek-widok" style="margin-top:20px;"></div>
+        </div>
+      </div>
+    `;
+    zastosujMotywZPamieci();
+  }
+  function pokazBazeWycieczek() {
+    const kontener = document.getElementById("baza-wycieczek-widok");
+    kontener.innerHTML = "⏳ Ładowanie...";
+  
+    const kategorie = ["jednodniowe", "weekendowe", "kilkudniowe", "wakacyjne"];
+    kontener.innerHTML = "";
+  
+    kategorie.forEach(kat => {
+      db.ref(`bazy/${lokalizacjaID}/wycieczki/${kat}`).once("value").then(snapshot => {
+        const dane = snapshot.val();
+        if (!dane) return;
+  
+        const sekcja = document.createElement("div");
+        sekcja.style.marginBottom = "15px";
+  
+        const naglowek = document.createElement("h4");
+        naglowek.innerText = `📂 ${kat.toUpperCase()}`;
+        sekcja.appendChild(naglowek);
+  
+        Object.entries(dane).forEach(([klucz, nazwa]) => {
+          const wiersz = document.createElement("div");
+          wiersz.style.display = "flex";
+          wiersz.style.justifyContent = "space-between";
+          wiersz.style.alignItems = "center";
+          wiersz.style.marginBottom = "5px";
+  
+          const span = document.createElement("span");
+          span.innerText = nazwa;
+  
+          const kosz = document.createElement("button");
+          kosz.innerText = "🗑️";
+          kosz.style = "font-size:0.9em; background:red; color:white; border:none; border-radius:4px; padding:2px 6px; cursor:pointer;";
+          kosz.onclick = () => usunZBazy(kat, klucz, nazwa);
+  
+          wiersz.appendChild(span);
+          wiersz.appendChild(kosz);
+          sekcja.appendChild(wiersz);
+        });
+  
+        kontener.appendChild(sekcja);
+      });
+    });
+  }
+  
+  function edytujOpis(klucz, kategoria, nazwa) {
+    const kontener = document.getElementById("opis-" + klucz);
+  
+    // pobierz aktualny opis z Firebase
+    db.ref(`bazy/${lokalizacjaID}/odbyte/${kategoria}/${klucz}/opis`).once("value").then(snapshot => {
+      const aktualnyOpis = snapshot.val() || "";
+  
+      kontener.innerHTML = `
+        <textarea id="pole-opis-${klucz}" rows="3" style="width:100%; border-radius:8px;">${aktualnyOpis}</textarea>
+        <button onclick="zapiszOpis('${klucz}', '${kategoria}')">💾 Zapisz opis</button>
+        <button onclick="pokazOdbyteKategorie('${kategoria}')">❌ Anuluj</button>
+      `;
+    });
+  }
+  
+  
+  function zapiszOpis(klucz, kategoria) {
+    const tekst = document.getElementById("pole-opis-" + klucz).value.trim();
+    if (!tekst) return;
+  
+    db.ref(`bazy/${lokalizacjaID}/odbyte/${kategoria}/${klucz}/opis`).set(tekst).then(() => {
+      pokazKomunikat("Opis zapisany!");
+      pokazOdbyteKategorie(kategoria);
+    });
+  }
+  function usunZBazy(kategoria, klucz, nazwa) {
+    pokazCustomModal(
+      `Na pewno usunąć „${nazwa}”?`,
+      () => {
+        db.ref(`bazy/${lokalizacjaID}/wycieczki/${kategoria}/${klucz}`).remove()
+          .then(() => {
+            pokazKomunikat("Usunięto z bazy.");
+            pokazBazeWycieczek();
+          })
+          .catch(() => pokazKomunikat("Nie udało się usunąć 😬"));
+      }
+    );
+  }
+  function pokazCustomModal(tresc, callbackOK) {
+    document.getElementById("custom-modal-text").innerText = tresc;
+    const modal = document.getElementById("custom-modal");
+    modal.style.display = "flex";
+  
+    const okBtn = document.getElementById("custom-modal-ok");
+    okBtn.onclick = () => {
+      modal.style.display = "none";
+      callbackOK();
+    };
+  }
+  
+  function zamknijCustomModal() {
+    document.getElementById("custom-modal").style.display = "none";
+  }
+    
   
