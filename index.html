@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <link rel="stylesheet" href="modal.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WYCIECZKOMAT</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="modal-overlay" class="modal-overlay">
+    <div class="modal" id="logowanie-box">
+        <h2>Witaj w Wycieczkomacie!</h2>      
+      <input type="text" id="input-id" placeholder="Wpisz ID lokalizacji (np. Katowice)" />
+      <input type="password" id="input-password" placeholder="Hasło" />
+      <button onclick="submitID()">Zaloguj</button>
+      <p id="login-error" style="color: red; display: none; margin-top: 10px;"></p>
+    </div>
+  </div>
+
+  <div id="app" style="display:none;"></div>
+
+  <!-- 🔔 Komunikaty aplikacji -->
+  <div id="komunikat" style="display:none; background:#f2f2f2; padding:15px; border-top:2px solid #333; text-align:center; font-weight:bold;"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
